@@ -24,7 +24,15 @@ if ($databaseUrl) {
     }
 }
 
+$autoDriver = 'sqlite';
+if (!$databaseConfig && env('MYSQLHOST')) {
+    $autoDriver = 'mysql';
+} elseif (!$databaseConfig && env('PGHOST')) {
+    $autoDriver = 'pgsql';
+}
+
 return [
+    'default' => env('DB_CONNECTION', $databaseConfig['driver'] ?? $autoDriver),
 
     /*
     |--------------------------------------------------------------------------

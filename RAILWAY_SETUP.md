@@ -37,7 +37,8 @@ If you prefer a traditional database setup:
 
 4. **Your app will automatically use these variables**
    - `config/database.php` now parses `DATABASE_URL` when present
-   - this supports Railway MySQL and PostgreSQL deployments
+   - if `MYSQLHOST` is set and no `DB_CONNECTION` exists, the app will default to `mysql`
+   - if `PGHOST` is set and no `DB_CONNECTION` exists, the app will default to `pgsql`
 
 ## Testing Registration Flow
 
