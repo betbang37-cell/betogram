@@ -167,6 +167,7 @@ return [
          * Package Service Providers...
          */
         Laravel\Tinker\TinkerServiceProvider::class,
+        KingFlamez\Rave\RaveServiceProvider::class,
 
         /*
          * Application Service Providers...

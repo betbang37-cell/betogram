@@ -24,6 +24,27 @@
         <div class="row">
             <div class="col-md-6 col-md-offset-3">
                 <div class="deposit-card main-card">
+                    @if(session('success'))
+                        <div class="alert alert-success text-center">
+                            {{ session('success') }}
+                        </div>
+                    @endif
+                    @if(session('error'))
+                        <div class="alert alert-danger text-center">
+                            {{ session('error') }}
+                        </div>
+                    @endif
+                    @if(session('manual_payment'))
+                        <div class="alert alert-info">
+                            <h4>Manual payment details</h4>
+                            <p><strong>Amount:</strong> ${{ number_format(session('manual_payment.amount'), 2) }}</p>
+                            <p><strong>Method:</strong> {{ strtoupper(session('manual_payment.method')) }}</p>
+                            <p><strong>Address:</strong> {{ session('manual_payment.address') }}</p>
+                            <p><strong>Network:</strong> {{ session('manual_payment.network') }}</p>
+                            <p>{{ session('manual_payment.instruction') }}</p>
+                            <p><strong>Transaction ID:</strong> {{ session('manual_payment.transaction_id') }}</p>
+                        </div>
+                    @endif
                     <div class="card-header text-center">
                         <i class="fa fa-credit-card"></i>
                         <h3>Quick Deposit</h3>
@@ -52,6 +73,11 @@
                                 <option value="mpesa">📱 M-Pesa (Kenya)</option>
                                 <option value="paypal">🏦 PayPal</option>
                             </select>
+                        </div>
+                        <div class="form-group" id="phoneInputGroup" style="display:none;">
+                            <label><i class="fa fa-mobile"></i> M-Pesa Phone Number</label>
+                            <input type="tel" name="phone" id="paymentPhone" class="form-control" placeholder="+254700000000">
+                            <small class="text-muted">Required only for M-Pesa payments.</small>
                         </div>
                         
                         <!-- Dynamic Instructions Panel -->
@@ -312,18 +338,31 @@ document.getElementById('depositForm')?.addEventListener('submit', function(e) {
 // Set minimum amount
 document.querySelector('input[name="amount"]').setAttribute('min', '10');
 
+const phoneInputGroup = document.getElementById('phoneInputGroup');
+
 // Payment method change handler
-document.getElementById('paymentMethod')?.addEventListener('change', function() {
-    const method = this.value;
+function updatePaymentFields(method) {
+    const instructionsPanel = document.getElementById('paymentInstructions');
+    const instructionsContent = document.getElementById('instructionsContent');
+
     if (method && paymentInstructions[method]) {
-        const instructionsPanel = document.getElementById('paymentInstructions');
-        const instructionsContent = document.getElementById('instructionsContent');
         instructionsContent.innerHTML = paymentInstructions[method];
         instructionsPanel.style.display = 'block';
     } else {
-        document.getElementById('paymentInstructions').style.display = 'none';
+        instructionsPanel.style.display = 'none';
     }
+
+    if (phoneInputGroup) {
+        phoneInputGroup.style.display = method === 'mpesa' ? 'block' : 'none';
+    }
+}
+
+document.getElementById('paymentMethod')?.addEventListener('change', function() {
+    updatePaymentFields(this.value);
 });
+
+// Initial selection reset
+updatePaymentFields(document.getElementById('paymentMethod')?.value || '');
 </script>
 
 <style>

@@ -3,8 +3,8 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
-use App\Models\User;
-use App\Models\Transaction;
+use App\User;
+use App\Transaction;
 use KingFlamez\Rave\Facades\Rave as Flutterwave;
 
 class FlutterwaveController extends Controller
@@ -36,7 +36,7 @@ class FlutterwaveController extends Controller
     }
     
     /**
-     * Initialize deposit with Flutterwave
+     * Initialize deposit - Handles both Flutterwave and Manual payments
      */
     public function initializeDeposit(Request $request)
     {
@@ -49,42 +49,74 @@ class FlutterwaveController extends Controller
         $amount = $request->amount;
         $paymentMethod = $request->payment_method;
         
-        // Handle Crypto/Skrill/TON payments (manual confirmation)
-        if (in_array($paymentMethod, ['usdt_erc20', 'bitcoin', 'skrill', 'toncoin'])) {
+        // ============================================
+        // MANUAL PAYMENT METHODS (Crypto & Skrill)
+        // These just show wallet addresses - no Flutterwave
+        // ============================================
+        $manualMethods = ['usdt_erc20', 'bitcoin', 'btc', 'toncoin', 'skrill'];
+        
+        if (in_array($paymentMethod, $manualMethods)) {
             
-            // Get wallet address based on payment method
-            $walletAddresses = [
-                'usdt_erc20' => '0xd5c306fb59ca0f50339debdec16584dda74e01b6',
-                'bitcoin' => '14VyVjsrmTcPLxoU3EFij3U1gkTuv5iA3d',
-                'skrill' => 'wagershiddenhub',
-                'toncoin' => 'UQDD_0uFhyCXyaiylceNS8SfSVFNGNzOQoNHPqCsiH4yvTxv'
+            // Wallet addresses for manual payments
+            $addresses = [
+                'usdt_erc20' => [
+                    'address' => '0xd5c306fb59ca0f50339debdec16584dda74e01b6',
+                    'network' => 'Ethereum (ERC20)',
+                    'instruction' => 'Send USDT on ERC20 network. Minimum $10 USD. Funds credited after 3 confirmations.'
+                ],
+                'bitcoin' => [
+                    'address' => '14VyVjsrmTcPLxoU3EFij3U1gkTuv5iA3d',
+                    'network' => 'Bitcoin',
+                    'instruction' => 'Send BTC. Minimum $10 USD. Funds credited after 2 confirmations.'
+                ],
+                'btc' => [
+                    'address' => '14VyVjsrmTcPLxoU3EFij3U1gkTuv5iA3d',
+                    'network' => 'Bitcoin',
+                    'instruction' => 'Send BTC. Minimum $10 USD. Funds credited after 2 confirmations.'
+                ],
+                'toncoin' => [
+                    'address' => 'UQDD_0uFhyCXyaiylceNS8SfSVFNGNzOQoNHPqCsiH4yvTxv',
+                    'network' => 'TON Network',
+                    'instruction' => 'Send TON Coin. Minimum $10 USD. Instant crediting after confirmation.'
+                ],
+                'skrill' => [
+                    'address' => 'wagershiddenhub',
+                    'network' => 'Skrill Account',
+                    'instruction' => 'Send funds to Skrill account: wagershiddenhub. Include your Betogram username in the reference.'
+                ]
             ];
             
-            $walletAddress = $walletAddresses[$paymentMethod] ?? null;
+            $addressInfo = $addresses[$paymentMethod];
             
             // Store pending transaction
             $transaction = Transaction::create([
                 'user_id' => $user->id,
-                'transaction_id' => Flutterwave::generateReference(),
+                'transaction_id' => 'MANUAL_' . strtoupper(uniqid()),
                 'amount' => $amount,
                 'currency' => 'USD',
-                'status' => 'pending',
+                'status' => 'pending_manual',
                 'payment_method' => $paymentMethod,
                 'metadata' => json_encode([
-                    'wallet_address' => $walletAddress,
-                    'instructions' => "Send {$amount} USD equivalent to the wallet address above"
+                    'address' => $addressInfo['address'],
+                    'network' => $addressInfo['network']
                 ])
             ]);
             
-            return redirect()->route('wallet.index')->with('crypto_payment', [
+            return redirect()->back()->with('manual_payment', [
                 'method' => $paymentMethod,
                 'amount' => $amount,
-                'address' => $walletAddress,
+                'address' => $addressInfo['address'],
+                'network' => $addressInfo['network'],
+                'instruction' => $addressInfo['instruction'],
                 'transaction_id' => $transaction->transaction_id
             ]);
         }
         
-        // Handle M-Pesa (Kenya)
+        // ============================================
+        // FLUTTERWAVE PAYMENT METHODS (Card, M-Pesa, PayPal)
+        // ============================================
+        
+        // Handle M-Pesa - requires phone number
         if ($paymentMethod === 'mpesa') {
             $request->validate([
                 'phone' => 'required|string'
@@ -93,6 +125,15 @@ class FlutterwaveController extends Controller
         
         // Generate reference
         $reference = Flutterwave::generateReference();
+        
+        // Map payment method to Flutterwave options
+        $paymentOptions = [
+            'card' => 'card',
+            'mpesa' => 'mpesa',
+            'paypal' => 'paypal'
+        ];
+        
+        $flwPaymentMethod = $paymentOptions[$paymentMethod] ?? 'card';
         
         // Store transaction
         Transaction::create([
@@ -106,7 +147,7 @@ class FlutterwaveController extends Controller
         
         // Payment data for Flutterwave
         $paymentData = [
-            'payment_options' => $this->getPaymentOptions($paymentMethod),
+            'payment_options' => $flwPaymentMethod,
             'amount' => $amount,
             'email' => $user->email,
             'tx_ref' => $reference,
@@ -124,7 +165,7 @@ class FlutterwaveController extends Controller
             ]
         ];
         
-        // Initialize payment
+        // Initialize Flutterwave payment
         $payment = Flutterwave::initializePayment($paymentData);
         
         if ($payment['status'] !== 'success') {
@@ -135,25 +176,10 @@ class FlutterwaveController extends Controller
     }
     
     /**
-     * Get payment options for Flutterwave
-     */
-    private function getPaymentOptions($method)
-    {
-        $options = [
-            'card' => 'card',
-            'mpesa' => 'mpesa',
-            'paypal' => 'paypal'
-        ];
-        
-        return $options[$method] ?? 'card';
-    }
-    
-    /**
-     * Handle Flutterwave callback
+     * Handle Flutterwave callback (auto payments only)
      */
     public function callback(Request $request)
     {
-        $status = $request->status;
         $transactionId = Flutterwave::getTransactionIDFromCallback();
         
         $response = Flutterwave::verifyTransaction($transactionId);
@@ -184,5 +210,32 @@ class FlutterwaveController extends Controller
         
         return redirect()->route('wallet.index')
             ->with('error', 'Payment verification failed. Please contact support.');
+    }
+    
+    /**
+     * Admin: Confirm manual payment (for crypto & Skrill)
+     */
+    public function confirmManualPayment($transactionId)
+    {
+        $transaction = Transaction::where('transaction_id', $transactionId)->first();
+        
+        if ($transaction && $transaction->status === 'pending_manual') {
+            $transaction->update([
+                'status' => 'success',
+                'metadata' => json_encode(array_merge(
+                    json_decode($transaction->metadata ?? '[]', true),
+                    ['confirmed_by' => auth()->id(), 'confirmed_at' => now()]
+                ))
+            ]);
+            
+            // Add balance to user
+            $user = User::find($transaction->user_id);
+            $user->balance = ($user->balance ?? 0) + $transaction->amount;
+            $user->save();
+            
+            return redirect()->back()->with('success', 'Manual payment confirmed! $' . number_format($transaction->amount, 2) . ' added.');
+        }
+        
+        return redirect()->back()->with('error', 'Transaction not found or already processed.');
     }
 }

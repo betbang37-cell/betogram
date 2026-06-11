@@ -88,6 +88,9 @@ The app reads these environment variables (in order of preference):
 - `APP_ENV`: local, production (should be 'production' on Railway)
 - `APP_DEBUG`: true/false (should be 'false' on production)
 - `APP_URL`: https://betogram-production.up.railway.app (auto-forced to HTTPS)
+- `FLUTTERWAVE_PUBLIC_KEY`: Your Flutterwave public API key
+- `FLUTTERWAVE_SECRET_KEY`: Your Flutterwave secret API key
+- `FLUTTERWAVE_ENVIRONMENT`: `staging` or `production`
 
 ## Next Steps
 1. Wait for Docker build to complete (2-5 minutes)

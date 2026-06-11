@@ -46,146 +46,66 @@
                     </ul>
                 </li>
                 <li class="header_deposit hidden-xs">
-    <a href="{{ url('payment-page') }}" class="btn btn-deposit btn-account-balance" title="Go to deposit page" aria-label="Deposit funds">
-        <i class="fa fa-credit-card" aria-hidden="true"></i>
-        <span class="account-balance-text">${{ number_format(Auth::user()->balance ?? 0, 2) }}</span>
-    </a>
-</li>
-
-<li class="header_wallet hidden-xs">
-    <a href="{{ url('my-wallet') }}" class="btn btn-wallet" title="My Wallet" aria-label="Wallet">
-        <i class="fa fa-wallet" aria-hidden="true"></i>
-        <span class="wallet-text">Wallet</span>
-    </a>
-</li>
+                    <a href="{{ url('payment-page') }}" class="btn btn-deposit btn-account-balance" title="Go to deposit page" aria-label="Deposit funds">
+                        <i class="fa fa-credit-card" aria-hidden="true"></i>
+                        <span class="account-balance-text">${{ number_format(Auth::user()->balance ?? 0, 2) }}</span>
+                    </a>
+                </li>
+                <li class="header_wallet hidden-xs">
+                    <a href="{{ url('my-wallet') }}" class="btn btn-wallet" title="My Wallet" aria-label="Wallet">
+                        <i class="fa fa-wallet" aria-hidden="true"></i>
+                        <span class="wallet-text">Wallet</span>
+                    </a>
+                </li>
                 @endif
             </ul>
         </div>
     </div>
 </nav>
+
 <style>
-    .header_search {
-        position: relative;
-    }
-    .btn-account-balance {
-        display: inline-flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        min-width: 38px;
-        padding: 3px 0;
-        border-radius: 60%;
-        background: rgba(10, 167, 57, 0.08);
-        color: inherit !important;
-        border: 1px solid #0c7c37;
-        font-weight: 600;
-        transition: transform 2s ease, box-shadow 0.2s ease, border-color 0.2s ease, background-color 0.2s ease;
-    }
-    .btn-account-balance:hover {
-        transform: translateY(-1px);
-        box-shadow: 0 10px 22px rgba(0, 0, 0, 0.08);
-        border-color: #3da728;
-        background: rgba(3, 70, 17, 0.16);
-    }
-    .btn-account-balance i.fa {
-        color: #28a745 !important;
-        font-size: 17px;
-        line-height: 1;
-    }
-    .account-balance-text {
-        display: block;
-        margin-top: 2px;
-        font-size: 9px;
-        color: #28a745;
-        line-height: 1.1;
-        font-weight: 600;
-        letter-spacing: 0.02em;
-    }
-    .search-results-dropdown {
-        position: absolute;
-        top: 100%;
-        left: 0;
-        right: 0;
-        background: #fff;
-        border: 1px solid #ddd;
-        border-top: none;
-        border-radius: 0 0 4px 4px;
-        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-        max-height: 300px;
-        overflow-y: auto;
-        z-index: 1000;
-    }
-    .search-results-list {
-        list-style: none;
-        margin: 0;
-        padding: 0;
-    }
-    .search-results-list li {
-        padding: 0;
-        margin: 0;
-    }
-    .search-result-item {
-        display: block;
-        padding: 10px 15px;
-        color: #333;
-        text-decoration: none;
-        border-bottom: 1px solid #f0f0f0;
-        transition: background 0.2s ease;
-    }
-    .search-result-item:hover {
-        background: #f8f9fa;
-        color: #28a745;
-    }
-    .search-no-results {
-        padding: 15px;
-        text-align: center;
-        color: #999;
-        font-size: 12px;
-    }
-
-
-
-
     .btn-wallet {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: white;
-    border-radius: 25px;
-    padding: 8px 20px;
-    margin-left: 10px;
-    transition: all 0.3s;
-}
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border-radius: 25px;
+        padding: 8px 20px;
+        margin-left: 10px;
+        transition: all 0.3s;
+    }
 
-.btn-wallet:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
-    color: white;
-}
+    .btn-wallet:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        color: white;
+    }
 
-.btn-deposit {
-    background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
-    color: white;
-    border-radius: 25px;
-    padding: 8px 20px;
-    transition: all 0.3s;
-}
+    .btn-deposit {
+        background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+        color: white;
+        border-radius: 25px;
+        padding: 8px 20px;
+        transition: all 0.3s;
+    }
 
-.btn-deposit:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 5px 15px rgba(40, 167, 69, 0.4);
-    color: white;
-}
+    .btn-deposit:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(40, 167, 69, 0.4);
+        color: white;
+    }
 
-.account-balance-text {
-    font-weight: bold;
-    margin-left: 8px;
-}
+    .account-balance-text {
+        font-weight: bold;
+        margin-left: 8px;
+    }
 
-.wallet-text {
-    margin-left: 8px;
-}
+    .wallet-text {
+        margin-left: 8px;
+    }
 </style>
+
 <div class="nav_hight"></div>
 <!-- Page header end -->
+
 <script>
 var allMatches = [];
 var sports = ['football', 'hockey', 'basketball', 'boxing', 'american-football'];
