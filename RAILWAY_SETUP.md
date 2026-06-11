@@ -33,9 +33,11 @@ If you prefer a traditional database setup:
 3. **Railway Automatically Sets Environment Variables**
    - For MySQL: `MYSQLHOST`, `MYSQLPORT`, `MYSQLUSER`, `MYSQLPASSWORD`, `MYSQLDATABASE`
    - For PostgreSQL: `PGHOST`, `PGPORT`, `PGUSER`, `PGPASSWORD`, `PGDATABASE`
-   - For PostgreSQL URL: `DATABASE_URL`
+   - For unified hosting: `DATABASE_URL`
 
 4. **Your app will automatically use these variables**
+   - `config/database.php` now parses `DATABASE_URL` when present
+   - this supports Railway MySQL and PostgreSQL deployments
 
 ## Testing Registration Flow
 

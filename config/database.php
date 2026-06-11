@@ -1,5 +1,29 @@
 <?php
 
+$databaseUrl = env('DATABASE_URL');
+$databaseConfig = [];
+
+if ($databaseUrl) {
+    $parsedUrl = parse_url($databaseUrl);
+
+    if ($parsedUrl) {
+        $driver = $parsedUrl['scheme'] ?? 'sqlite';
+
+        if ($driver === 'postgres') {
+            $driver = 'pgsql';
+        }
+
+        $databaseConfig = [
+            'driver' => $driver,
+            'host' => $parsedUrl['host'] ?? null,
+            'port' => $parsedUrl['port'] ?? null,
+            'database' => isset($parsedUrl['path']) ? ltrim($parsedUrl['path'], '/') : null,
+            'username' => $parsedUrl['user'] ?? null,
+            'password' => $parsedUrl['pass'] ?? null,
+        ];
+    }
+}
+
 return [
 
     /*
@@ -13,7 +37,7 @@ return [
     |
     */
 
-    'default' => env('DB_CONNECTION', 'sqlite'),
+    'default' => env('DB_CONNECTION', $databaseConfig['driver'] ?? 'sqlite'),
 
     /*
     |--------------------------------------------------------------------------
@@ -41,11 +65,11 @@ return [
 
         'mysql' => [
             'driver' => 'mysql',
-            'host' => env('DB_HOST', env('MYSQLHOST', '127.0.0.1')),
-            'port' => env('DB_PORT', env('MYSQLPORT', '3306')),
-            'database' => env('DB_DATABASE', env('MYSQLDATABASE', 'forge')),
-            'username' => env('DB_USERNAME', env('MYSQLUSER', 'forge')),
-            'password' => env('DB_PASSWORD', env('MYSQLPASSWORD', '')),
+            'host' => env('DB_HOST', env('MYSQLHOST', $databaseConfig['host'] ?? '127.0.0.1')),
+            'port' => env('DB_PORT', env('MYSQLPORT', $databaseConfig['port'] ?? '3306')),
+            'database' => env('DB_DATABASE', env('MYSQLDATABASE', $databaseConfig['database'] ?? 'forge')),
+            'username' => env('DB_USERNAME', env('MYSQLUSER', $databaseConfig['username'] ?? 'forge')),
+            'password' => env('DB_PASSWORD', env('MYSQLPASSWORD', $databaseConfig['password'] ?? '')),
             'unix_socket' => env('DB_SOCKET', ''),
             'charset' => 'utf8mb4',
             'collation' => 'utf8mb4_unicode_ci',
@@ -56,11 +80,11 @@ return [
 
         'pgsql' => [
             'driver' => 'pgsql',
-            'host' => env('DB_HOST', env('PGHOST', '127.0.0.1')),
-            'port' => env('DB_PORT', env('PGPORT', '5432')),
-            'database' => env('DB_DATABASE', env('PGDATABASE', 'forge')),
-            'username' => env('DB_USERNAME', env('PGUSER', 'forge')),
-            'password' => env('DB_PASSWORD', env('PGPASSWORD', '')),
+            'host' => env('DB_HOST', env('PGHOST', $databaseConfig['host'] ?? '127.0.0.1')),
+            'port' => env('DB_PORT', env('PGPORT', $databaseConfig['port'] ?? '5432')),
+            'database' => env('DB_DATABASE', env('PGDATABASE', $databaseConfig['database'] ?? 'forge')),
+            'username' => env('DB_USERNAME', env('PGUSER', $databaseConfig['username'] ?? 'forge')),
+            'password' => env('DB_PASSWORD', env('PGPASSWORD', $databaseConfig['password'] ?? '')),
             'charset' => 'utf8',
             'prefix' => '',
             'schema' => 'public',
