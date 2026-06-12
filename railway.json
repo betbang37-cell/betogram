@@ -1,8 +1,0 @@
-{
-  "build": {
-    "builder": "NIXPACKS",
-    "nixpacksConfig": {
-      "phpVersion": "7.4"
-    }
-  }
-}

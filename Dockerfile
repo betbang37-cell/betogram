@@ -1,53 +1,60 @@
+<<<<<<< HEAD
 FROM php:7.4-apache
+=======
+﻿FROM php:7.4-apache
+>>>>>>> 656a0d0 (Fix Dockerfile (remove nproc), update database config for MySQL, and update railway.json)
 
-# Install system dependencies
-RUN apt-get update && apt-get install -y \
-    curl \
-    zip \
-    unzip \
-    git \
-    libsqlite3-dev \
-    libpng-dev \
-    libonig-dev \
-    libxml2-dev \
-    libzip-dev \
-    && docker-php-ext-install pdo_mysql mbstring exif pcntl bcmath gd zip \
-    && a2enmod rewrite \
+# Configure apt retries
+RUN echo 'APT::Acquire::Retries "5";' > /etc/apt/apt.conf.d/80-retries \\
+    && echo 'APT::Get::Fix-Missing "true";' >> /etc/apt/apt.conf.d/80-retries
+
+# Install dependencies with retry logic
+RUN apt-get update && \\
+    apt-get install -y --no-install-recommends --fix-missing \\
+        libonig-dev \\
+        libzip-dev \\
+        libpng-dev \\
+        libjpeg-dev \\
+        libfreetype6-dev \\
+        libpq-dev \\
+    || (echo "Retrying installation..." && sleep 10 && \\
+        apt-get install -y --no-install-recommends --fix-missing \\
+            libonig-dev \\
+            libzip-dev \\
+            libpng-dev \\
+            libjpeg-dev \\
+            libfreetype6-dev \\
+            libpq-dev) \\
+    && apt-get clean \\
     && rm -rf /var/lib/apt/lists/*
 
-# Install Composer
-COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
+# Install PHP extensions (removed -j for Windows compatibility)
+RUN docker-php-ext-configure gd --with-freetype --with-jpeg \\
+    && docker-php-ext-install gd mbstring zip pdo_mysql pdo_pgsql opcache
+
+# Enable Apache modules
+RUN a2enmod rewrite headers
 
 # Set working directory
 WORKDIR /var/www/html
 
-# Copy application files
+# Copy application
 COPY . .
 
-# Install PHP dependencies (ignore Redis if not available)
-RUN composer install --no-interaction --optimize-autoloader --no-dev --ignore-platform-req=ext-redis
+# Install Composer
+COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
+
+# Install dependencies
+RUN composer install --no-interaction --optimize-autoloader --no-dev
 
 # Set permissions
-RUN chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache \
-    && chmod -R 775 /var/www/html/storage /var/www/html/bootstrap/cache
+RUN chown -R www-data:www-data /var/www/html \\
+    && chmod -R 755 /var/www/html/storage \\
+    && chmod -R 755 /var/www/html/bootstrap/cache
 
-# Configure Apache document root to Laravel's public folder
-ENV APACHE_DOCUMENT_ROOT=/var/www/html/public
-RUN sed -ri -e 's!/var/www/html!${APACHE_DOCUMENT_ROOT}!g' /etc/apache2/sites-available/*.conf /etc/apache2/mods-available/dir.load
-
-# Set environment
-ENV APP_ENV=production
-ENV APP_DEBUG=false
+# Generate app key
+RUN php artisan key:generate --force
 
 EXPOSE 80
 
-# Create and use startup script with migrations
-RUN echo '#!/bin/bash\n\
-set -e\n\
-echo "Running migrations..."\n\
-php artisan migrate --force\n\
-echo "Starting Apache..."\n\
-exec apache2-foreground' > /usr/local/bin/startup.sh && \
-    chmod +x /usr/local/bin/startup.sh
-
-CMD ["/usr/local/bin/startup.sh"]
+CMD ["apache2-foreground"]

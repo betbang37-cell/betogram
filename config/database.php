@@ -45,8 +45,6 @@ return [
     |
     */
 
-    'default' => env('DB_CONNECTION', $databaseConfig['driver'] ?? 'sqlite'),
-
     /*
     |--------------------------------------------------------------------------
     | Database Connections

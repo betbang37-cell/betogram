@@ -138,7 +138,7 @@
                                  <bdo>
                                  <input type="radio" value="GBP"  name="currency">
                                  <span></span>
-                                 <abbr> USD </abbr>
+                                 <abbr> GBP </abbr>
                                  </bdo>
                                  <bdo>
                                  <input type="radio" value="SEK"  name="currency">
