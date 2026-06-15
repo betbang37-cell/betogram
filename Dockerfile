@@ -1,60 +1,65 @@
-<<<<<<< HEAD
-FROM php:7.4-apache
-=======
 ﻿FROM php:7.4-apache
->>>>>>> 656a0d0 (Fix Dockerfile (remove nproc), update database config for MySQL, and update railway.json)
 
-# Configure apt retries
-RUN echo 'APT::Acquire::Retries "5";' > /etc/apt/apt.conf.d/80-retries \\
-    && echo 'APT::Get::Fix-Missing "true";' >> /etc/apt/apt.conf.d/80-retries
+# Install system dependencies with retry logic
+RUN apt-get update && \
+    for i in 1 2 3; do \
+      apt-get install -y \
+        git \
+        curl \
+        libpng-dev \
+        libonig-dev \
+        libxml2-dev \
+        libpq-dev \
+        libsqlite3-dev \
+        pkg-config \
+        zip \
+        unzip && break || ([ $i -lt 3 ] && sleep 10); \
+    done && \
+    apt-get clean && rm -rf /var/lib/apt/lists/*
 
-# Install dependencies with retry logic
-RUN apt-get update && \\
-    apt-get install -y --no-install-recommends --fix-missing \\
-        libonig-dev \\
-        libzip-dev \\
-        libpng-dev \\
-        libjpeg-dev \\
-        libfreetype6-dev \\
-        libpq-dev \\
-    || (echo "Retrying installation..." && sleep 10 && \\
-        apt-get install -y --no-install-recommends --fix-missing \\
-            libonig-dev \\
-            libzip-dev \\
-            libpng-dev \\
-            libjpeg-dev \\
-            libfreetype6-dev \\
-            libpq-dev) \\
-    && apt-get clean \\
-    && rm -rf /var/lib/apt/lists/*
+# Install PHP extensions
+RUN docker-php-ext-install pdo pdo_mysql pdo_sqlite pdo_pgsql mbstring exif pcntl bcmath gd
 
-# Install PHP extensions (removed -j for Windows compatibility)
-RUN docker-php-ext-configure gd --with-freetype --with-jpeg \\
-    && docker-php-ext-install gd mbstring zip pdo_mysql pdo_pgsql opcache
+# Disable ALL MPM modules at build time
+RUN rm -f /etc/apache2/mods-enabled/mpm_* /etc/apache2/mods-available/mpm_worker* /etc/apache2/mods-available/mpm_event* && \
+    a2enmod rewrite
 
-# Enable Apache modules
-RUN a2enmod rewrite headers
+# Install Composer
+COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
 # Set working directory
 WORKDIR /var/www/html
 
-# Copy application
-COPY . .
+# Copy application files
+COPY . /var/www/html
 
-# Install Composer
-COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
+# Install PHP dependencies
+RUN composer install --no-interaction --no-dev --optimize-autoloader
 
-# Install dependencies
-RUN composer install --no-interaction --optimize-autoloader --no-dev
+# Set proper permissions
+RUN chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache && \
+    chmod -R 775 /var/www/html/storage /var/www/html/bootstrap/cache
 
-# Set permissions
-RUN chown -R www-data:www-data /var/www/html \\
-    && chmod -R 755 /var/www/html/storage \\
-    && chmod -R 755 /var/www/html/bootstrap/cache
+# Configure Apache - replace default config with proper Laravel setup
+RUN rm /etc/apache2/sites-enabled/000-default.conf && \
+    echo '<VirtualHost *:80>' > /etc/apache2/sites-available/000-default.conf && \
+    echo '  ServerName localhost' >> /etc/apache2/sites-available/000-default.conf && \
+    echo '  DocumentRoot /var/www/html/public' >> /etc/apache2/sites-available/000-default.conf && \
+    echo '  <Directory /var/www/html/public>' >> /etc/apache2/sites-available/000-default.conf && \
+    echo '    Options -MultiViews +FollowSymLinks' >> /etc/apache2/sites-available/000-default.conf && \
+    echo '    AllowOverride All' >> /etc/apache2/sites-available/000-default.conf && \
+    echo '    Require all granted' >> /etc/apache2/sites-available/000-default.conf && \
+    echo '  </Directory>' >> /etc/apache2/sites-available/000-default.conf && \
+    echo '</VirtualHost>' >> /etc/apache2/sites-available/000-default.conf && \
+    a2ensite 000-default.conf
 
-# Generate app key
-RUN php artisan key:generate --force
+# Create empty SQLite database file
+RUN touch /var/www/html/database/database.sqlite && \
+    chown www-data:www-data /var/www/html/database/database.sqlite
+
+# Create entrypoint script that cleans up MPM modules at runtime
+RUN echo '#!/bin/bash\nset -e\nrm -f /etc/apache2/mods-enabled/mpm_worker* /etc/apache2/mods-enabled/mpm_event* 2>/dev/null || true\nexec apache2-foreground' > /usr/local/bin/docker-entrypoint.sh && \
+    chmod +x /usr/local/bin/docker-entrypoint.sh
 
 EXPOSE 80
-
-CMD ["apache2-foreground"]
+ENTRYPOINT ["/usr/local/bin/docker-entrypoint.sh"]
