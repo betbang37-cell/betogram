@@ -1,18 +1,9 @@
-<?php
-use App\Users;
-?>
-
 @if(Session::has('user_id'))
 <!-- Sidebar -->
         <nav id="leftbar" class="navbar sidenav navbar-inverse showhide">
             <ul class="nav sidebar-nav">
                 <div class="user_images">
                   <img src="{{asset('assets/front_end/images/avatar.jpg')}}" class="img-responsive">
-                  <?php
-                  $userId = Session::get('user_id');
-                  $userData = Users::find($userId);
-                  //dd($userData);
-                  ?>
                   <a href="javascript:void(0);">{{ $userData->name }}</a>
                 </div>
 

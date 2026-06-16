@@ -82,7 +82,8 @@ class RegistrationController extends Controller
                 'roles_id' => null,
                 'social_media_id' => null,
                 'subscription_type' => 0,
-                'forgot_pass' => 0
+                'forgot_pass' => 0,
+                'balance' => 0.00
             );
 
             $insert_data = Users::insert($data);
@@ -368,8 +369,9 @@ class RegistrationController extends Controller
             return redirect(url('login'));
         }
         $userId = Session::get('user_id');
-        $userData = Users::find($userId);
-        return view('home',compact('userData'));
+        // Optimize query: select only needed fields to reduce memory and query time
+        $userData = Users::select('id', 'name', 'email', 'balance', 'user_name', 'country_id', 'status')->find($userId);
+        return view('home', compact('userData'));
     }
 
     public function depositPage()

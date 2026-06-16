@@ -48,7 +48,7 @@
                 <li class="header_deposit hidden-xs">
                     <a href="{{ url('payment-page') }}" class="btn btn-deposit btn-account-balance" title="Go to deposit page" aria-label="Deposit funds">
                         <i class="fa fa-credit-card" aria-hidden="true"></i>
-                        <span class="account-balance-text">${{ number_format(Auth::user()->balance ?? 0, 2) }}</span>
+                        <span class="account-balance-text">${{ number_format($userData->balance ?? 0, 2) }}</span>
                     </a>
                 </li>
                 <li class="header_wallet hidden-xs">
@@ -110,14 +110,20 @@
 var allMatches = [];
 var sports = ['football', 'hockey', 'basketball', 'boxing', 'american-football'];
 
-// Load all fixtures from all sports on page load
-$(document).ready(function() {
-    var loadedCount = 0;
+// Lazy-load fixtures only when search is triggered (not on page load)
+var isLoadingFixtures = false;
+
+function loadFixturesForSearch() {
+    if (isLoadingFixtures) return;
+    if (allMatches.length > 0) return;
+    
+    isLoadingFixtures = true;
     
     sports.forEach(function(sport) {
         $.ajax({
             type: "GET",
             url: "{{ url('api/fixtures') }}?sport=" + sport + "&status=all",
+            timeout: 5000,
             success: function(result) {
                 if (result.data) {
                     result.data.forEach(function(match) {
@@ -130,16 +136,27 @@ $(document).ready(function() {
                         allMatches.push(match);
                     });
                 }
+            },
+            error: function() {
+                // Silently fail for individual sports
             }
         });
     });
-});
+}
 
 function SearchMatches(searchTerm) {
     var dropdown = $('#search-results-dropdown');
     
     if (searchTerm === '' || searchTerm.length < 1) {
         dropdown.hide();
+        return;
+    }
+    
+    // Lazy-load fixtures on first search
+    if (allMatches.length === 0) {
+        loadFixturesForSearch();
+        dropdown.html('<li style="padding:10px;text-align:center;">Loading matches...</li>');
+        dropdown.show();
         return;
     }
     
